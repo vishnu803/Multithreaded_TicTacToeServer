@@ -30,7 +30,8 @@ Used mutex locks to avoid race conditions when multiple clients tries to access 
   6. After the completion of the game both of the clients connections will be terminated.
 
 ## Additional tasks implemented
-
+  1. Printing the number of active clients using mutex locks.
+  2. sending the feedback messages to both the clients after every chance.
 
 ## Learnings
  Got to know about socket programming, client server model and understood the uses of OS concepts like multi threading and mutex in real life.

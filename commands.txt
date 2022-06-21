@@ -1,0 +1,17 @@
+Server Side :-
+gcc -pthread server.c -o server
+./server <port number>
+
+Client side :-
+gcc -pthread client.c -o client
+./client <IP Address of the system> <port number>
+
+****To know your IP address****
+use ifconfig command on your ubuntu terminal.
+
+For example :-
+On my system i have used :
+
+./server 5679
+./client  172.23.175.254 5679
+

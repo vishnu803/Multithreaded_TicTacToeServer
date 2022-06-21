@@ -10,7 +10,7 @@
 void error(const char *msg)
 {
     perror(msg);
-    printf("Either the server shut down or the other player disconnected.\nGame over.\n");
+    printf("Either the has server shut down or the other player disconnected.\nGame over.\n");
     
     exit(0);
 }
@@ -132,9 +132,7 @@ int main(int argc, char *argv[])
     #endif 
 
     char msg[4];
-    char board[3][3] = { {' ', ' ', ' '}, 
-                         {' ', ' ', ' '}, 
-                         {' ', ' ', ' '} };
+    char board[3][3] = { {' ', ' ', ' '}, {' ', ' ', ' '}, {' ', ' ', ' '} };
 
     printf("Tic-Tac-Toe\n------------\n");
 

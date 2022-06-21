@@ -7,8 +7,20 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
+#define SOCKETERROR (-1)
+#define MAXCONN (10) 
+
 int player_count = 0;
 pthread_mutex_t mutexcount;
+
+
+int check(int exp, const char *msg) {
+    if(exp == SOCKETERROR){
+        perror(msg) ;
+        exit(1) ;
+    }
+    return exp ;
+}
 
 void error(const char *msg)
 {
@@ -44,27 +56,27 @@ void write_clients_int(int * cli_sockfd, int msg)
     write_client_int(cli_sockfd[1], msg);
 }
 
-int setup_listener(int portno)
+int set_listener(int portno)
 {
-    int sockfd;
-    struct sockaddr_in serv_addr;
+    int sock;
+    struct sockaddr_in ser_addr;
 
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd < 0) 
-        error("ERROR opening listener socket.");
+    sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock < 0) 
+        error("ERROR in opening the listener socket.");
     
-    memset(&serv_addr, 0, sizeof(serv_addr));
-    serv_addr.sin_family = AF_INET;	
-    serv_addr.sin_addr.s_addr = INADDR_ANY;	
-    serv_addr.sin_port = htons(portno);		
+    memset(&ser_addr, 0, sizeof(ser_addr));
+    ser_addr.sin_family = AF_INET;	
+    ser_addr.sin_addr.s_addr = INADDR_ANY;	
+    ser_addr.sin_port = htons(portno);		
 
-    if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
+    if (bind(sock, (struct sockaddr *) &ser_addr, sizeof(ser_addr)) < 0)
         error("ERROR binding listener socket.");
 
     
     printf("Server is set\nwaiting for connections.....\n");    
 
-    return sockfd;
+    return sock;
 }
 int recv_int(int cli_sockfd)
 {
@@ -78,10 +90,10 @@ int recv_int(int cli_sockfd)
     return msg;
 }
 
-void get_clients(int lis_sockfd, int * cli_sockfd)
+void get_clients(int listen_sock, int * cli_sockfd)
 {
     socklen_t clilen;
-    struct sockaddr_in serv_addr, cli_addr;
+    struct sockaddr_in cli_addr;
     
     #ifdef DEBUG
     printf("Listening for clients...\n");
@@ -90,13 +102,13 @@ void get_clients(int lis_sockfd, int * cli_sockfd)
     int num_conn = 0;
     while(num_conn < 2)
     {
-	    listen(lis_sockfd, 253 - player_count);
+	    listen(listen_sock, (MAXCONN+1 - player_count));
         
         memset(&cli_addr, 0, sizeof(cli_addr));
 
         clilen = sizeof(cli_addr);
 	
-        cli_sockfd[num_conn] = accept(lis_sockfd, (struct sockaddr *) &cli_addr, &clilen);
+        cli_sockfd[num_conn] = accept(listen_sock, (struct sockaddr *) &cli_addr, &clilen);
     
         if (cli_sockfd[num_conn] < 0)
             error("ERROR accepting a connection from a client.");
@@ -128,7 +140,7 @@ void get_clients(int lis_sockfd, int * cli_sockfd)
     }
 }
 
-int get_player_move(int cli_sockfd)
+int gt_player_mov(int cli_sockfd)
 {
     #ifdef DEBUG
     printf("Getting player move...\n");
@@ -159,11 +171,18 @@ int check_move(char board[][3], int move, int player_id)
 }
 
 void update_board(char board[][3], int move, int player_id)
-{
-    board[move/3][move%3] = player_id ? 'X' : 'O';
+{   
+    int row = move/3;
+    int col = move%3;
+    if(player_id){
+        board[row][col] = 'X';
+    }
+    else{
+        board[row][col] = 'O';
+    }
     
     #ifdef DEBUG
-    printf("Board updated.\n");
+    printf("Board is updated.\n");
     #endif
 }
 
@@ -214,25 +233,26 @@ int check_board(char board[][3], int last_move)
 
     if ( board[row][0] == board[row][1] && board[row][1] == board[row][2] ) { 
         #ifdef DEBUG
-        printf("Win by row %d.\n", row);
+        printf("Congratulations \nyou have won by making a row %d.\n", row);
         #endif 
         return 1;
     }
     else if ( board[0][col] == board[1][col] && board[1][col] == board[2][col] ) { 
         #ifdef DEBUG
-        printf("Win by column %d.\n", col);
+        printf("Congratulations \nyou have won by making a column %d.\n", col);
         #endif 
         return 1;
     }
-    else if (!(last_move % 2)) { if ( (last_move == 0 || last_move == 4 || last_move == 8) && (board[1][1] == board[0][0] && board[1][1] == board[2][2]) ) {  
+    else if (!(last_move % 2)) { 
+        if ( (last_move == 0 || last_move == 4 || last_move == 8) && (board[1][1] == board[0][0] && board[1][1] == board[2][2]) ) {  
             #ifdef DEBUG
-            printf("Win by backslash diagonal.\n");
+            printf("Congratulations \nyou have won by making a backslash diagnol.\n");
             #endif 
             return 1;
         }
         if ( (last_move == 2 || last_move == 4 || last_move == 6) && (board[1][1] == board[0][2] && board[1][1] == board[2][0]) ) { 
             #ifdef DEBUG
-            printf("Win by frontslash diagonal.\n");
+            printf("Congratulations \nyou have won by making a frontslash diagnol.\n");
             #endif 
             return 1;
         }
@@ -274,7 +294,7 @@ void *run_game(void *thread_data)
         int valid = 0;
         int move = 0;
         while(!valid) {             
-            move = get_player_move(cli_sockfd[player_turn]);
+            move = gt_player_mov(cli_sockfd[player_turn]);
             if (move == -1) break; 
             printf("Player %d played position %d\n", player_turn, move);
                 
@@ -338,20 +358,20 @@ void *run_game(void *thread_data)
 
 int main(int argc, char *argv[])
 {   
-    if (argc < 2) {
-        fprintf(stderr,"ERROR, no port provided\n");
+    if (argc <= 1) {
+        fprintf(stderr,"ERROR, port number not provided\n");
         exit(1);
     }
     
-    int lis_sockfd = setup_listener(atoi(argv[1])); 
+    int listen_sock = set_listener(atoi(argv[1])); 
     pthread_mutex_init(&mutexcount, NULL);
 
     while (1) {
-        if (player_count <= 252) {   
+        if (player_count <= 10) {   
             int *cli_sockfd = (int*)malloc(2*sizeof(int)); 
             memset(cli_sockfd, 0, 2*sizeof(int));
             
-            get_clients(lis_sockfd, cli_sockfd);
+            get_clients(listen_sock, cli_sockfd);
             
             #ifdef DEBUG
             printf("Starting new game thread...\n");
@@ -367,7 +387,7 @@ int main(int argc, char *argv[])
             }
     }
 
-    close(lis_sockfd);
+    close(listen_sock);
 
     pthread_mutex_destroy(&mutexcount);
 pthread_exit(NULL);

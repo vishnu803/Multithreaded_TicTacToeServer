@@ -1,13 +1,11 @@
 # Multithreaded_TicTacToeServer
-A multithreaded tictactoe application where players can join the server and enjoy the game!!
-## Project Description
+This is a multithreaded tictactoe application where players can join to the server 
 
-## How to run the project(Include all dependencies)
+## Guidelines to run(Include all dependencies)
 
-## The internal working of your project(Try to explain the theory of your project in this part)
+  *Link to video demo :- [Link][https://drive.google.com/file/d/1yhTxNCgkwJjGcMlwsisV_l6FpMAGHMlT/view?usp=sharing]
+## Internal working(Try to explain the theory of your project in this part)
 
-## Your learnings from the project
+## Learnings
 
-## Description of the additional task you have done
-
-## Resources and References 
+## Additional task
